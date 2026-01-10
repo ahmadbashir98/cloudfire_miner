@@ -201,8 +201,16 @@ export async function registerRoutes(
       }
 
       const now = new Date();
-      if (now < new Date(session.endsAt)) {
-        return res.status(400).json({ message: "Mining session not complete" });
+      const sessionEndTime = new Date(session.endsAt);
+      
+      if (now.getTime() < sessionEndTime.getTime()) {
+        const remainingMs = sessionEndTime.getTime() - now.getTime();
+        const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
+        return res.status(400).json({ 
+          message: `Mining session not complete. ${remainingHours}h remaining.`,
+          remainingMs,
+          endsAt: session.endsAt
+        });
       }
 
       const userMachines = await storage.getUserMachines(userId);

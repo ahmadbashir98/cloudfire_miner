@@ -1,9 +1,10 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Cpu, Users, User } from "lucide-react";
+import { LayoutDashboard, Cpu, Users, User, Wallet } from "lucide-react";
 
 const navItems = [
   { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/machines", icon: Cpu, label: "Machines" },
+  { path: "/payments", icon: Wallet, label: "Wallet" },
   { path: "/team", icon: Users, label: "Team" },
   { path: "/profile", icon: User, label: "Profile" },
 ];

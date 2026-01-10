@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Flame, User, Wallet, Cpu, Gift, LogOut, CreditCard, Shield } from "lucide-react";
+import { Flame, User, Wallet, Cpu, Gift, LogOut, Shield } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/bottom-nav";
@@ -107,15 +107,6 @@ export default function Profile() {
             <CardTitle className="text-lg">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3"
-              onClick={() => setLocation("/payments")}
-              data-testid="button-goto-payments"
-            >
-              <CreditCard className="w-5 h-5" />
-              Deposit / Withdraw
-            </Button>
             <Button
               variant="outline"
               className="w-full justify-start gap-3"
