@@ -12,6 +12,7 @@ import {
   Smartphone,
   Upload,
   Image,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { BottomNav } from "@/components/bottom-nav";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -59,13 +67,26 @@ export default function Payments() {
     enabled: !!user?.id,
   });
 
+  const { data: userMachines = [] } = useQuery<any[]>({
+    queryKey: ["/api/machines/user", user?.id],
+    enabled: !!user?.id,
+  });
+
+  const hasActiveMachine = userMachines.length > 0;
+
   const withdrawForm = useForm<WithdrawFormData>({
     resolver: zodResolver(withdrawalFormSchema),
     defaultValues: {
       amount: 0,
+      method: "easypaisa",
+      accountHolderName: "",
       accountNumber: "",
     },
   });
+
+  const watchedAmount = withdrawForm.watch("amount");
+  const taxAmount = watchedAmount * 0.10;
+  const netAmount = watchedAmount - taxAmount;
 
   const depositForm = useForm<DepositFormData>({
     resolver: zodResolver(depositFormSchema),
@@ -79,7 +100,10 @@ export default function Payments() {
     mutationFn: async (data: WithdrawFormData) => {
       const res = await apiRequest("POST", "/api/withdrawals/request", {
         userId: user?.id,
-        ...data,
+        amount: data.amount,
+        method: data.method,
+        accountHolderName: data.accountHolderName,
+        accountNumber: data.accountNumber,
       });
       return await res.json();
     },
@@ -89,7 +113,7 @@ export default function Payments() {
       withdrawForm.reset();
       toast({
         title: "Withdrawal requested!",
-        description: "Your request is being processed.",
+        description: "Your request is being processed within 24 hours.",
       });
     },
     onError: (error: any) => {
@@ -325,70 +349,135 @@ export default function Payments() {
             </div>
           </CardHeader>
           <CardContent>
-            <Form {...withdrawForm}>
-              <form
-                onSubmit={withdrawForm.handleSubmit((data) =>
-                  withdrawMutation.mutate(data)
-                )}
-                className="space-y-4"
-              >
-                <FormField
-                  control={withdrawForm.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount (PKR)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Enter amount"
-                          className="bg-background/50"
-                          data-testid="input-withdraw-amount"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={withdrawForm.control}
-                  name="accountNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Account Number</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="EasyPaisa/JazzCash number"
-                          className="bg-background/50"
-                          data-testid="input-account-number"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="submit"
-                  disabled={withdrawMutation.isPending || balance < 500}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
-                  data-testid="button-withdraw"
-                >
-                  {withdrawMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Request Withdrawal"
-                  )}
-                </Button>
-                <p className="text-xs text-muted-foreground text-center">
-                  Minimum withdrawal: 500 PKR
+            {!hasActiveMachine ? (
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                <p className="text-sm text-red-400" data-testid="text-no-machine-warning">
+                  Please activate a machine to enable withdrawals.
                 </p>
-              </form>
-            </Form>
+              </div>
+            ) : (
+              <Form {...withdrawForm}>
+                <form
+                  onSubmit={withdrawForm.handleSubmit((data) =>
+                    withdrawMutation.mutate(data)
+                  )}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={withdrawForm.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount (PKR)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="Enter amount"
+                            className="bg-background/50"
+                            data-testid="input-withdraw-amount"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {watchedAmount >= 500 && (
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Tax (10%):</span>
+                        <span className="text-red-400" data-testid="text-tax-amount">-{taxAmount.toLocaleString()} PKR</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span className="text-muted-foreground">Amount after Tax:</span>
+                        <span className="text-green-400" data-testid="text-net-amount">{netAmount.toLocaleString()} PKR</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <FormField
+                    control={withdrawForm.control}
+                    name="method"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Payment Method</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-background/50" data-testid="select-method">
+                              <SelectValue placeholder="Select payment method" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="easypaisa">EasyPaisa</SelectItem>
+                            <SelectItem value="jazzcash">JazzCash</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={withdrawForm.control}
+                    name="accountHolderName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Holder Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter account holder name"
+                            className="bg-background/50"
+                            data-testid="input-account-holder-name"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={withdrawForm.control}
+                    name="accountNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="11-digit account number"
+                            className="bg-background/50"
+                            data-testid="input-account-number"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    disabled={withdrawMutation.isPending || balance < 500}
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
+                    data-testid="button-withdraw"
+                  >
+                    {withdrawMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Request Withdrawal"
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Withdrawals are processed within 24 hours. A 10% tax applies.
+                  </p>
+                </form>
+              </Form>
+            )}
           </CardContent>
         </Card>
 

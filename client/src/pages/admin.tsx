@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Flame, Users, ArrowDownLeft, ArrowUpRight, Settings } from "lucide-react";
+import { Flame, Users, ArrowDownLeft, ArrowUpRight, Wallet, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,10 @@ export default function Admin() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [balanceInput, setBalanceInput] = useState<Record<string, string>>({});
+
+  const { data: stats } = useQuery<{ totalUsers: number; totalBalance: number }>({
+    queryKey: ["/api/admin/stats"],
+  });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
@@ -35,6 +39,7 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({ title: "Balance updated!" });
     },
     onError: (error: any) => {
@@ -50,6 +55,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/deposits"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({ title: "Deposit updated!" });
     },
     onError: (error: any) => {
@@ -64,6 +70,7 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({ title: "Withdrawal updated!" });
     },
     onError: (error: any) => {
@@ -82,17 +89,58 @@ export default function Admin() {
     }
   };
 
+  const getMethodBadge = (method: string) => {
+    if (method === "jazzcash") {
+      return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">JazzCash</Badge>;
+    }
+    return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">EasyPaisa</Badge>;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-blue-950/10">
       <header className="flex items-center justify-center gap-2 py-4 border-b border-border/50">
         <Flame className="w-8 h-8 text-amber-400" />
         <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-amber-400 bg-clip-text text-transparent">
-          Admin Dashboard
+          Admin Portal
         </h1>
       </header>
 
-      <main className="px-4 py-6 max-w-4xl mx-auto">
-        <Tabs defaultValue="users" className="space-y-6">
+      <main className="px-4 py-6 max-w-4xl mx-auto space-y-6">
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/20">
+                  <Users className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Users</p>
+                  <p className="text-2xl font-bold text-blue-400" data-testid="text-total-users">
+                    {stats?.totalUsers ?? 0}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/20">
+                  <Wallet className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Global Balance</p>
+                  <p className="text-2xl font-bold text-amber-400" data-testid="text-global-balance">
+                    {(stats?.totalBalance ?? 0).toLocaleString()} PKR
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="withdrawals" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users" className="gap-2" data-testid="tab-users">
               <Users className="w-4 h-4" />
@@ -130,6 +178,7 @@ export default function Admin() {
                         <div className="flex-1">
                           <div className="font-medium">{u.username}</div>
                           <div className="text-sm text-muted-foreground">
+                            {u.phoneNumber && <span className="mr-2">Phone: {u.phoneNumber}</span>}
                             Balance: <span className="text-amber-400">{u.balance?.toLocaleString() || 0} PKR</span>
                             {" | "}Miners: <span className="text-blue-400">{u.totalMiners || 0}</span>
                             {u.isAdmin && (
@@ -252,7 +301,7 @@ export default function Admin() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <ArrowUpRight className="w-5 h-5 text-red-400" />
+                  <ArrowUpRight className="w-5 h-5 text-amber-400" />
                   Withdrawal Requests ({withdrawals.length})
                 </CardTitle>
               </CardHeader>
@@ -273,17 +322,40 @@ export default function Admin() {
                       const withdrawalUser = users.find((u: any) => u.id === w.userId);
                       return (
                         <div key={w.id} className="p-4 rounded-lg bg-background/50 border border-border space-y-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
                             <div>
                               <div className="font-medium">{withdrawalUser?.username || "Unknown User"}</div>
-                              <div className="text-lg font-bold text-red-400">{w.amount?.toLocaleString()} PKR</div>
+                              {withdrawalUser?.phoneNumber && (
+                                <div className="text-sm text-muted-foreground">Phone: {withdrawalUser.phoneNumber}</div>
+                              )}
                             </div>
-                            {getStatusBadge(w.status)}
+                            <div className="flex items-center gap-2">
+                              {getMethodBadge(w.method || "easypaisa")}
+                              {getStatusBadge(w.status)}
+                            </div>
                           </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-background/30">
+                            <div>
+                              <div className="text-xs text-muted-foreground">Requested Amount</div>
+                              <div className="text-lg font-bold text-amber-400">{w.amount?.toLocaleString()} PKR</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground">Tax Deducted (10%)</div>
+                              <div className="text-lg font-bold text-red-400">-{(w.taxAmount || w.amount * 0.1)?.toLocaleString()} PKR</div>
+                            </div>
+                            <div className="col-span-2">
+                              <div className="text-xs text-muted-foreground">Net Amount (Payable)</div>
+                              <div className="text-xl font-bold text-green-400">{(w.netAmount || w.amount * 0.9)?.toLocaleString()} PKR</div>
+                            </div>
+                          </div>
+
                           <div className="text-sm space-y-1">
-                            <div><span className="text-muted-foreground">Account:</span> <span className="font-mono">{w.accountNumber}</span></div>
+                            <div><span className="text-muted-foreground">Account Holder:</span> <span className="font-medium">{w.accountHolderName || "N/A"}</span></div>
+                            <div><span className="text-muted-foreground">Account Number:</span> <span className="font-mono">{w.accountNumber}</span></div>
                             <div><span className="text-muted-foreground">Date:</span> {new Date(w.createdAt).toLocaleString()}</div>
                           </div>
+
                           {w.status === "pending" && (
                             <div className="flex gap-2">
                               <Button

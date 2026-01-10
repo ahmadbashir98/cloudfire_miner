@@ -82,7 +82,7 @@ function Router() {
       <Route path="/profile">
         <ProtectedRoute component={Profile} />
       </Route>
-      <Route path="/admin">
+      <Route path="/admin-portal">
         <ProtectedRoute component={Admin} />
       </Route>
       <Route component={NotFound} />
