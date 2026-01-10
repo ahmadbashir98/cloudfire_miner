@@ -7,6 +7,7 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  phoneNumber: varchar("phone_number", { length: 11 }),
   balance: real("balance").notNull().default(0),
   totalMiners: integer("total_miners").notNull().default(0),
   isAdmin: boolean("is_admin").notNull().default(false),
@@ -29,6 +30,7 @@ export const signupSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
+  phoneNumber: z.string().length(11, "Phone number must be 11 digits"),
   referralCode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",

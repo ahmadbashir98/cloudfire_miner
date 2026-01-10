@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Flame } from "lucide-react";
+import { Flame, User, Phone } from "lucide-react";
 import { FloatingCoins } from "@/components/floating-coins";
 import { MiningButton } from "@/components/mining-button";
 import { StatsCards } from "@/components/stats-cards";
@@ -14,12 +14,12 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [miningEndTime, setMiningEndTime] = useState<Date | null>(null);
 
-  const { data: miningSession, isLoading: sessionLoading } = useQuery({
+  const { data: miningSession, isLoading: sessionLoading } = useQuery<any>({
     queryKey: ["/api/mining/session", user?.id],
     enabled: !!user?.id,
   });
 
-  const { data: userData } = useQuery({
+  const { data: userData } = useQuery<any>({
     queryKey: ["/api/users", user?.id],
     enabled: !!user?.id,
   });
@@ -101,6 +101,23 @@ export default function Dashboard() {
       <FloatingCoins />
 
       <main className="px-4 py-6 space-y-8 max-w-lg mx-auto">
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-card/50 border border-border/50">
+          <div className="p-2 rounded-full bg-gradient-to-br from-blue-500 to-amber-500">
+            <User className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold" data-testid="text-dashboard-username">
+              {userData?.username || user?.username}
+            </h2>
+            {(userData?.phoneNumber || user?.phoneNumber) && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground" data-testid="text-dashboard-phone">
+                <Phone className="w-3 h-3" />
+                {userData?.phoneNumber || user?.phoneNumber}
+              </div>
+            )}
+          </div>
+        </div>
+
         <StatsCards
           totalAssets={userData?.balance ?? user?.balance ?? 0}
           totalMiners={userData?.totalMiners ?? user?.totalMiners ?? 0}

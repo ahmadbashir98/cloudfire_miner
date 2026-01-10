@@ -26,7 +26,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByReferralCode(code: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
-  createUser(user: InsertUser, referredById?: string): Promise<User>;
+  createUser(user: InsertUser, referredById?: string, phoneNumber?: string): Promise<User>;
   updateUserBalance(id: string, balance: number): Promise<User | undefined>;
   updateUserMiners(id: string, totalMiners: number): Promise<User | undefined>;
   updateUserReferralEarnings(id: string, amount: number): Promise<User | undefined>;
@@ -74,12 +74,13 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).orderBy(desc(users.id));
   }
 
-  async createUser(insertUser: InsertUser, referredById?: string): Promise<User> {
+  async createUser(insertUser: InsertUser, referredById?: string, phoneNumber?: string): Promise<User> {
     const referralCode = generateReferralCode();
     const [user] = await db
       .insert(users)
       .values({
         ...insertUser,
+        phoneNumber: phoneNumber || null,
         balance: 0,
         totalMiners: 0,
         referralCode,

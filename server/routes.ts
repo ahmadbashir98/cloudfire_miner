@@ -44,7 +44,7 @@ export async function registerRoutes(
   // Auth: Signup with referral support
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { username, password, referralCode } = req.body;
+      const { username, password, referralCode, phoneNumber } = req.body;
       
       const parsed = insertUserSchema.safeParse({ username, password });
       if (!parsed.success) {
@@ -64,7 +64,7 @@ export async function registerRoutes(
         }
       }
 
-      const user = await storage.createUser(parsed.data, referredById);
+      const user = await storage.createUser(parsed.data, referredById, phoneNumber);
       const { password: _, ...safeUser } = user;
       res.json(safeUser);
     } catch (error: any) {

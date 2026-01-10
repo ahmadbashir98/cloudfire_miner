@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Flame, Loader2, Gift } from "lucide-react";
+import { Flame, Loader2, Gift, Phone, CheckCircle, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,12 +22,20 @@ import type { z } from "zod";
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
+const MOCK_OTP = "1234";
+
 export default function Signup() {
   const [, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [referralCode, setReferralCode] = useState<string>("");
+  
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -43,6 +51,7 @@ export default function Signup() {
       username: "",
       password: "",
       confirmPassword: "",
+      phoneNumber: "",
       referralCode: "",
     },
   });
@@ -53,12 +62,56 @@ export default function Signup() {
     }
   }, [referralCode, form]);
 
+  const handleSendOtp = () => {
+    const phoneNumber = form.getValues("phoneNumber");
+    if (phoneNumber.length !== 11) {
+      form.setError("phoneNumber", { message: "Phone number must be 11 digits" });
+      return;
+    }
+    
+    setOtpSending(true);
+    setTimeout(() => {
+      setOtpSending(false);
+      setShowOtpInput(true);
+      setOtpError("");
+      setOtpValue("");
+      toast({
+        title: "OTP Sent!",
+        description: "A verification code has been sent to your phone (use 1234 for demo)",
+      });
+    }, 1000);
+  };
+
+  const handleVerifyOtp = () => {
+    if (otpValue === MOCK_OTP) {
+      setIsPhoneVerified(true);
+      setOtpError("");
+      toast({
+        title: "Phone Verified!",
+        description: "Your phone number has been verified successfully.",
+      });
+    } else {
+      setOtpError("Invalid OTP, please try again.");
+      setIsPhoneVerified(false);
+    }
+  };
+
   const onSubmit = async (data: SignupFormData) => {
+    if (!isPhoneVerified) {
+      toast({
+        title: "Phone not verified",
+        description: "Please verify your phone number before creating an account",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await apiRequest("POST", "/api/auth/signup", {
         username: data.username,
         password: data.password,
+        phoneNumber: data.phoneNumber,
         referralCode: data.referralCode || referralCode || undefined,
       });
       const user = await res.json();
@@ -78,6 +131,16 @@ export default function Signup() {
       setIsLoading(false);
     }
   };
+
+  const phoneNumber = form.watch("phoneNumber");
+
+  useEffect(() => {
+    if (isPhoneVerified && phoneNumber.length !== 11) {
+      setIsPhoneVerified(false);
+      setShowOtpInput(false);
+      setOtpValue("");
+    }
+  }, [phoneNumber, isPhoneVerified]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-blue-950/20">
@@ -114,6 +177,99 @@ export default function Signup() {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-blue-400" />
+                      Phone Number
+                    </FormLabel>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input
+                          placeholder="03XXXXXXXXX"
+                          className="bg-background/50"
+                          maxLength={11}
+                          data-testid="input-phone"
+                          disabled={isPhoneVerified}
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 11);
+                            field.onChange(value);
+                          }}
+                        />
+                      </FormControl>
+                      {!isPhoneVerified && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleSendOtp}
+                          disabled={otpSending || phoneNumber.length !== 11}
+                          data-testid="button-send-otp"
+                        >
+                          {otpSending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            "Send OTP"
+                          )}
+                        </Button>
+                      )}
+                      {isPhoneVerified && (
+                        <div className="flex items-center gap-1 px-3 text-green-400">
+                          <CheckCircle className="w-5 h-5" />
+                        </div>
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {showOtpInput && !isPhoneVerified && (
+                <div className="space-y-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <label className="text-sm font-medium">Enter 4-digit OTP</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Enter OTP"
+                      maxLength={4}
+                      value={otpValue}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setOtpValue(value);
+                        setOtpError("");
+                      }}
+                      className="bg-background/50"
+                      data-testid="input-otp"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleVerifyOtp}
+                      disabled={otpValue.length !== 4}
+                      data-testid="button-verify-otp"
+                    >
+                      Verify
+                    </Button>
+                  </div>
+                  {otpError && (
+                    <div className="flex items-center gap-2 text-red-400 text-sm" data-testid="text-otp-error">
+                      <XCircle className="w-4 h-4" />
+                      {otpError}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {isPhoneVerified && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20" data-testid="text-phone-verified">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <span className="text-sm text-green-400">Phone number verified</span>
+                </div>
+              )}
+
               <FormField
                 control={form.control}
                 name="password"
@@ -182,8 +338,8 @@ export default function Signup() {
               )}
               <Button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-500 to-amber-500 hover:from-blue-600 hover:to-amber-600"
+                disabled={isLoading || !isPhoneVerified}
+                className="w-full bg-gradient-to-r from-blue-500 to-amber-500 hover:from-blue-600 hover:to-amber-600 disabled:opacity-50"
                 data-testid="button-signup"
               >
                 {isLoading ? (
@@ -192,6 +348,11 @@ export default function Signup() {
                   "Create Account"
                 )}
               </Button>
+              {!isPhoneVerified && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Please verify your phone number to create an account
+                </p>
+              )}
             </form>
           </Form>
           <p className="text-center mt-6 text-sm text-muted-foreground">
