@@ -126,8 +126,17 @@ export default function Dashboard() {
 
       <main className="px-4 py-6 space-y-6 max-w-lg mx-auto">
         <div className="flex items-center gap-3 p-4 rounded-lg bg-card/50 border border-border/50">
-          <div className="p-2 rounded-full bg-gradient-to-br from-blue-500 to-amber-500">
-            <User className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-amber-500 flex items-center justify-center overflow-hidden border-2 border-amber-400/50">
+            {userData?.profilePic ? (
+              <img 
+                src={userData.profilePic} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+                data-testid="img-profile-pic"
+              />
+            ) : (
+              <User className="w-6 h-6 text-white" />
+            )}
           </div>
           <div>
             <h2 className="text-lg font-semibold" data-testid="text-dashboard-username">
