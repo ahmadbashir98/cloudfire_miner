@@ -59,6 +59,8 @@ export interface IStorage {
   getLevel2Referrals(userId: string): Promise<User[]>;
   createReferralCommission(userId: string, fromUserId: string, depositId: string, level: number, amount: number): Promise<ReferralCommission>;
   getUserCommissions(userId: string): Promise<ReferralCommission[]>;
+  getCommissionFromUser(userId: string, fromUserId: string): Promise<number>;
+  markRebatePaid(userId: string): Promise<User | undefined>;
 
   getActiveAnnouncements(): Promise<Announcement[]>;
   getAllAnnouncements(): Promise<Announcement[]>;
@@ -311,6 +313,23 @@ export class DatabaseStorage implements IStorage {
       .from(referralCommissions)
       .where(eq(referralCommissions.userId, userId))
       .orderBy(desc(referralCommissions.createdAt));
+  }
+
+  async getCommissionFromUser(userId: string, fromUserId: string): Promise<number> {
+    const commissions = await db
+      .select()
+      .from(referralCommissions)
+      .where(and(eq(referralCommissions.userId, userId), eq(referralCommissions.fromUserId, fromUserId)));
+    return commissions.reduce((sum, c) => sum + parseFloat(String(c.amount)), 0);
+  }
+
+  async markRebatePaid(userId: string): Promise<User | undefined> {
+    const [updated] = await db
+      .update(users)
+      .set({ rebatePaidToReferrer: true })
+      .where(eq(users.id, userId))
+      .returning();
+    return updated || undefined;
   }
 
   async getActiveAnnouncements(): Promise<Announcement[]> {
