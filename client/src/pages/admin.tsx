@@ -595,9 +595,13 @@ export default function Admin() {
                               <div className="text-xs text-muted-foreground">Tax Deducted (10%)</div>
                               <div className="text-lg font-bold text-red-400">-${(w.taxAmount || w.amount * 0.1)?.toLocaleString()}</div>
                             </div>
-                            <div className="col-span-2">
-                              <div className="text-xs text-muted-foreground">Net Amount (Payable)</div>
-                              <div className="text-xl font-bold text-green-400">${(w.netAmount || w.amount * 0.9)?.toLocaleString()}</div>
+                            <div>
+                              <div className="text-xs text-muted-foreground">Net USD</div>
+                              <div className="text-lg font-bold text-amber-400">${(w.netAmount || w.amount * 0.9)?.toLocaleString()}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground">PKR Payout (Rate: 270)</div>
+                              <div className="text-xl font-bold text-green-400">{(w.pkrAmount || (w.netAmount || w.amount * 0.9) * 270)?.toLocaleString()} PKR</div>
                             </div>
                           </div>
 

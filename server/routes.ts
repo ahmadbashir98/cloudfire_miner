@@ -1,7 +1,7 @@
 import express, { type Express, type Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { MINING_MACHINES_DATA, insertUserSchema } from "@shared/schema";
+import { MINING_MACHINES_DATA, insertUserSchema, EXCHANGE_RATES } from "@shared/schema";
 import multer, { FileFilterCallback } from "multer";
 import path from "path";
 import fs from "fs";
@@ -258,7 +258,7 @@ export async function registerRoutes(
 
       const user = await storage.getUser(userId);
       if (user) {
-        await storage.updateUserBalance(userId, user.balance + dailyReward);
+        await storage.updateUserBalance(userId, parseFloat(String(user.balance)) + dailyReward);
       }
 
       await storage.claimMiningSession(session.id);
@@ -297,7 +297,9 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
 
-      if (user.balance < machine.price) {
+      const userBalance = parseFloat(String(user.balance));
+      const machinePrice = parseFloat(String(machine.price));
+      if (userBalance < machinePrice) {
         return res.status(400).json({ message: "Insufficient balance" });
       }
 
@@ -308,24 +310,26 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Rental limit reached for this machine" });
       }
 
-      const newBalance = user.balance - machine.price;
+      const newBalance = userBalance - machinePrice;
       await storage.updateUserBalance(userId, newBalance);
       await storage.updateUserMiners(userId, user.totalMiners + 1);
       await storage.addUserMachine({ userId, machineId });
 
       // Process referral commissions on machine rental (investment)
       if (user.referredById) {
-        const commission1 = machine.price * 0.10;
+        const commission1 = machinePrice * 0.10;
         const referrer1 = await storage.getUser(user.referredById);
         if (referrer1) {
-          await storage.updateUserBalance(referrer1.id, referrer1.balance + commission1);
+          const referrer1Balance = parseFloat(String(referrer1.balance));
+          await storage.updateUserBalance(referrer1.id, referrer1Balance + commission1);
           await storage.updateUserReferralEarnings(referrer1.id, commission1);
 
           if (referrer1.referredById) {
             const referrer2 = await storage.getUser(referrer1.referredById);
             if (referrer2) {
-              const commission2 = machine.price * 0.04;
-              await storage.updateUserBalance(referrer2.id, referrer2.balance + commission2);
+              const commission2 = machinePrice * 0.04;
+              const referrer2Balance = parseFloat(String(referrer2.balance));
+              await storage.updateUserBalance(referrer2.id, referrer2Balance + commission2);
               await storage.updateUserReferralEarnings(referrer2.id, commission2);
             }
           }
@@ -359,8 +363,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "All fields required" });
       }
 
-      if (amount < 500) {
-        return res.status(400).json({ message: "Minimum withdrawal is 500 PKR" });
+      if (amount < 2) {
+        return res.status(400).json({ message: "Minimum withdrawal is $2" });
       }
 
       const user = await storage.getUser(userId);
@@ -374,16 +378,19 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Please activate a machine to enable withdrawals." });
       }
 
-      if (user.balance < amount) {
+      const userBalance = parseFloat(String(user.balance));
+      if (userBalance < amount) {
         return res.status(400).json({ message: "Insufficient balance" });
       }
 
       // Calculate 10% tax
       const taxAmount = amount * 0.10;
       const netAmount = amount - taxAmount;
+      // Calculate PKR payout using withdrawal exchange rate
+      const pkrAmount = netAmount * EXCHANGE_RATES.WITHDRAW_RATE;
 
-      await storage.updateUserBalance(userId, user.balance - amount);
-      const withdrawal = await storage.createWithdrawal(userId, amount, taxAmount, netAmount, method, accountHolderName, accountNumber);
+      await storage.updateUserBalance(userId, userBalance - amount);
+      const withdrawal = await storage.createWithdrawal(userId, amount, taxAmount, netAmount, pkrAmount, method, accountHolderName, accountNumber);
 
       res.json(withdrawal);
     } catch (error: any) {
@@ -447,7 +454,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "All fields required" });
       }
 
-      const deposit = await storage.createDeposit(userId, amount, transactionId, screenshotUrl);
+      // Calculate PKR amount using deposit exchange rate
+      const pkrAmount = amount * EXCHANGE_RATES.DEPOSIT_RATE;
+
+      const deposit = await storage.createDeposit(userId, amount, pkrAmount, transactionId, screenshotUrl);
       res.json(deposit);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Server error" });
@@ -498,22 +508,25 @@ export async function registerRoutes(
       if (status === "approved" && deposit.status !== "approved") {
         const user = await storage.getUser(deposit.userId);
         if (user) {
-          await storage.updateUserBalance(user.id, user.balance + deposit.amount);
+          await storage.updateUserBalance(user.id, parseFloat(String(user.balance)) + parseFloat(String(deposit.amount)));
           
           // Process referral commissions on deposit approval
+          const depositAmount = parseFloat(String(deposit.amount));
           if (user.referredById) {
-            const commission1 = deposit.amount * 0.10;
+            const commission1 = depositAmount * 0.10;
             const referrer1 = await storage.getUser(user.referredById);
             if (referrer1) {
-              await storage.updateUserBalance(referrer1.id, referrer1.balance + commission1);
+              const referrer1Balance = parseFloat(String(referrer1.balance));
+              await storage.updateUserBalance(referrer1.id, referrer1Balance + commission1);
               await storage.updateUserReferralEarnings(referrer1.id, commission1);
               await storage.createReferralCommission(referrer1.id, user.id, deposit.id, 1, commission1);
 
               if (referrer1.referredById) {
                 const referrer2 = await storage.getUser(referrer1.referredById);
                 if (referrer2) {
-                  const commission2 = deposit.amount * 0.04;
-                  await storage.updateUserBalance(referrer2.id, referrer2.balance + commission2);
+                  const commission2 = depositAmount * 0.04;
+                  const referrer2Balance = parseFloat(String(referrer2.balance));
+                  await storage.updateUserBalance(referrer2.id, referrer2Balance + commission2);
                   await storage.updateUserReferralEarnings(referrer2.id, commission2);
                   await storage.createReferralCommission(referrer2.id, user.id, deposit.id, 2, commission2);
                 }

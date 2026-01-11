@@ -43,13 +43,13 @@ export interface IStorage {
 
   getUserWithdrawals(userId: string): Promise<WithdrawalRequest[]>;
   getAllWithdrawals(): Promise<WithdrawalRequest[]>;
-  createWithdrawal(userId: string, amount: number, taxAmount: number, netAmount: number, method: string, accountHolderName: string, accountNumber: string): Promise<WithdrawalRequest>;
+  createWithdrawal(userId: string, amount: number, taxAmount: number, netAmount: number, pkrAmount: number, method: string, accountHolderName: string, accountNumber: string): Promise<WithdrawalRequest>;
   getUserMachineCount(userId: string): Promise<number>;
   updateWithdrawalStatus(id: string, status: string): Promise<WithdrawalRequest | undefined>;
 
   getUserDeposits(userId: string): Promise<DepositRequest[]>;
   getAllDeposits(): Promise<DepositRequest[]>;
-  createDeposit(userId: string, amount: number, transactionId: string, screenshotUrl?: string): Promise<DepositRequest>;
+  createDeposit(userId: string, amount: number, pkrAmount: number, transactionId: string, screenshotUrl?: string): Promise<DepositRequest>;
   updateDepositStatus(id: string, status: string, reviewedBy: string): Promise<DepositRequest | undefined>;
 
   getReferrals(userId: string): Promise<User[]>;
@@ -185,10 +185,10 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(withdrawalRequests.createdAt));
   }
 
-  async createWithdrawal(userId: string, amount: number, taxAmount: number, netAmount: number, method: string, accountHolderName: string, accountNumber: string): Promise<WithdrawalRequest> {
+  async createWithdrawal(userId: string, amount: number, taxAmount: number, netAmount: number, pkrAmount: number, method: string, accountHolderName: string, accountNumber: string): Promise<WithdrawalRequest> {
     const [withdrawal] = await db
       .insert(withdrawalRequests)
-      .values({ userId, amount, taxAmount, netAmount, method, accountHolderName, accountNumber, status: "pending" })
+      .values({ userId, amount, taxAmount, netAmount, pkrAmount, method, accountHolderName, accountNumber, status: "pending" })
       .returning();
     return withdrawal;
   }
@@ -225,12 +225,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(depositRequests.createdAt));
   }
 
-  async createDeposit(userId: string, amount: number, transactionId: string, screenshotUrl?: string): Promise<DepositRequest> {
+  async createDeposit(userId: string, amount: number, pkrAmount: number, transactionId: string, screenshotUrl?: string): Promise<DepositRequest> {
     const [deposit] = await db
       .insert(depositRequests)
       .values({
         userId,
         amount,
+        pkrAmount,
         transactionId,
         screenshotUrl: screenshotUrl || null,
         status: "pending",
