@@ -33,6 +33,7 @@ export interface IStorage {
   updateUserBalance(id: string, balance: number): Promise<User | undefined>;
   updateUserMiners(id: string, totalMiners: number): Promise<User | undefined>;
   updateUserReferralEarnings(id: string, amount: number): Promise<User | undefined>;
+  updateUserProfilePic(id: string, profilePic: string): Promise<User | undefined>;
 
   getUserMachines(userId: string): Promise<UserMachine[]>;
   addUserMachine(data: InsertUserMachine): Promise<UserMachine>;
@@ -128,6 +129,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(users)
       .set({ totalReferralEarnings: currentEarnings + amount })
+      .where(eq(users.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateUserProfilePic(id: string, profilePic: string): Promise<User | undefined> {
+    const [updated] = await db
+      .update(users)
+      .set({ profilePic })
       .where(eq(users.id, id))
       .returning();
     return updated || undefined;

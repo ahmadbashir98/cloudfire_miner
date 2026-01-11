@@ -19,6 +19,7 @@ export const users = pgTable("users", {
   referralCode: varchar("referral_code").unique(),
   referredById: varchar("referred_by_id"),
   totalReferralEarnings: numeric("total_referral_earnings", { precision: 10, scale: 2 }).notNull().default("0"),
+  profilePic: text("profile_pic"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

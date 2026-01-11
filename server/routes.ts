@@ -11,6 +11,11 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+const profilePicsDir = "./public/uploads/profile_pics";
+if (!fs.existsSync(profilePicsDir)) {
+  fs.mkdirSync(profilePicsDir, { recursive: true });
+}
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: uploadDir,
@@ -31,6 +36,27 @@ const upload = multer({
   },
 });
 
+const profilePicUpload = multer({
+  storage: multer.diskStorage({
+    destination: profilePicsDir,
+    filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+      const userId = req.body.userId || "unknown";
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `user_${userId}_profile${ext}`);
+    },
+  }),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+    const allowed = [".jpg", ".jpeg", ".png", ".webp"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files allowed (jpg, png, webp)"));
+    }
+  },
+});
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -40,6 +66,11 @@ export async function registerRoutes(
     res.setHeader("Access-Control-Allow-Origin", "*");
     next();
   }, express.static(uploadDir));
+
+  app.use("/public/uploads/profile_pics", (req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    next();
+  }, express.static(profilePicsDir));
   
   // Auth: Signup with referral support
   app.post("/api/auth/signup", async (req, res) => {
@@ -589,6 +620,28 @@ export async function registerRoutes(
       }
       const url = `/uploads/${file.filename}`;
       res.json({ url });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Upload failed" });
+    }
+  });
+
+  // Profile Picture: Upload profile picture
+  app.post("/api/uploads/profile-pic", profilePicUpload.single("profilePic"), async (req: Request, res) => {
+    try {
+      const file = req.file as Express.Multer.File | undefined;
+      const userId = req.body.userId;
+      
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      if (!userId) {
+        return res.status(400).json({ message: "User ID required" });
+      }
+
+      const profilePicUrl = `/public/uploads/profile_pics/${file.filename}`;
+      await storage.updateUserProfilePic(userId, profilePicUrl);
+      
+      res.json({ url: profilePicUrl });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Upload failed" });
     }
