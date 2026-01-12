@@ -306,25 +306,26 @@ export async function registerRoutes(
         await storage.updateUserBalance(userId, userBalance + totalReward);
         
         // Distribute daily commissions to referrers based on claimed earnings
+        // These go to COMMISSION BALANCE only, not Available Balance
         if (totalReward > 0 && user.referredById) {
-          // Level 1: 10% of daily earnings
+          // Level 1: 10% of daily earnings -> Commission Balance
           const commission1 = totalReward * 0.10;
           const referrer1 = await storage.getUser(user.referredById);
           if (referrer1) {
-            const referrer1Balance = parseFloat(String(referrer1.balance || 0));
-            await storage.updateUserBalance(referrer1.id, referrer1Balance + commission1);
+            const referrer1CommBalance = parseFloat(String(referrer1.commissionBalance || 0));
+            await storage.updateUserCommissionBalance(referrer1.id, referrer1CommBalance + commission1);
             await storage.updateUserReferralEarnings(referrer1.id, commission1);
-            await storage.createReferralCommission(referrer1.id, userId, 1, commission1, "daily_claim");
+            await storage.createReferralCommission(referrer1.id, userId, 1, commission1, "mining");
             
-            // Level 2: 4% of daily earnings
+            // Level 2: 4% of daily earnings -> Commission Balance
             if (referrer1.referredById) {
               const referrer2 = await storage.getUser(referrer1.referredById);
               if (referrer2) {
                 const commission2 = totalReward * 0.04;
-                const referrer2Balance = parseFloat(String(referrer2.balance || 0));
-                await storage.updateUserBalance(referrer2.id, referrer2Balance + commission2);
+                const referrer2CommBalance = parseFloat(String(referrer2.commissionBalance || 0));
+                await storage.updateUserCommissionBalance(referrer2.id, referrer2CommBalance + commission2);
                 await storage.updateUserReferralEarnings(referrer2.id, commission2);
-                await storage.createReferralCommission(referrer2.id, userId, 2, commission2, "daily_claim");
+                await storage.createReferralCommission(referrer2.id, userId, 2, commission2, "mining");
               }
             }
           }
@@ -566,17 +567,22 @@ export async function registerRoutes(
         machine.dailyProfit
       );
 
-      // One-time fixed rebate to L1 referrer on first machine rental
-      if (user.referredById && !user.rebatePaidToReferrer && machine.rebate > 0) {
+      // One-time fixed rebate to L1 referrer for THIS machine purchase
+      // This rebate is paid once per machine, added to referrer's Available Balance
+      if (user.referredById && machine.rebate > 0) {
         const referrer1 = await storage.getUser(user.referredById);
         if (referrer1) {
           const referrer1Balance = parseFloat(String(referrer1.balance || 0));
           const rebateAmount = machine.rebate;
           await storage.updateUserBalance(referrer1.id, referrer1Balance + rebateAmount);
-          await storage.markRebatePaid(userId);
+          await storage.markMachineRebatePaid(userMachine.id);
+          // Record the rebate commission
+          await storage.createReferralCommission(referrer1.id, userId, 1, rebateAmount, "rebate");
+          // Update referrer's total earnings (just pass the increment)
+          await storage.updateUserReferralEarnings(referrer1.id, rebateAmount);
         }
       }
-      // Note: Daily commissions (10% L1, 4% L2) are distributed when user claims mining rewards
+      // Note: Daily commissions (10% L1, 4% L2) are distributed when mining sessions complete
 
       const updatedUser = await storage.getUser(userId);
       const { password: _, ...safeUser } = updatedUser!;
@@ -981,25 +987,25 @@ export async function registerRoutes(
           // Save mining claim record
           await storage.createMiningClaim(session.userId, dailyProfit, 1);
           
-          // Distribute daily commissions (10% L1, 4% L2)
+          // Distribute daily commissions (10% L1, 4% L2) -> goes to COMMISSION BALANCE only
           if (user.referredById) {
             const commission1 = dailyProfit * 0.10;
             const referrer1 = await storage.getUser(user.referredById);
             if (referrer1) {
-              const referrer1Balance = parseFloat(String(referrer1.balance || 0));
-              await storage.updateUserBalance(referrer1.id, referrer1Balance + commission1);
+              const referrer1CommBalance = parseFloat(String(referrer1.commissionBalance || 0));
+              await storage.updateUserCommissionBalance(referrer1.id, referrer1CommBalance + commission1);
               await storage.updateUserReferralEarnings(referrer1.id, commission1);
-              await storage.createReferralCommission(referrer1.id, session.userId, 1, commission1, "daily_claim");
+              await storage.createReferralCommission(referrer1.id, session.userId, 1, commission1, "mining");
               
-              // Level 2: 4%
+              // Level 2: 4% -> Commission Balance
               if (referrer1.referredById) {
                 const referrer2 = await storage.getUser(referrer1.referredById);
                 if (referrer2) {
                   const commission2 = dailyProfit * 0.04;
-                  const referrer2Balance = parseFloat(String(referrer2.balance || 0));
-                  await storage.updateUserBalance(referrer2.id, referrer2Balance + commission2);
+                  const referrer2CommBalance = parseFloat(String(referrer2.commissionBalance || 0));
+                  await storage.updateUserCommissionBalance(referrer2.id, referrer2CommBalance + commission2);
                   await storage.updateUserReferralEarnings(referrer2.id, commission2);
-                  await storage.createReferralCommission(referrer2.id, session.userId, 2, commission2, "daily_claim");
+                  await storage.createReferralCommission(referrer2.id, session.userId, 2, commission2, "mining");
                 }
               }
             }

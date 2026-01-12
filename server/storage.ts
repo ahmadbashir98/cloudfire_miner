@@ -66,6 +66,8 @@ export interface IStorage {
   getUserCommissions(userId: string): Promise<ReferralCommission[]>;
   getCommissionFromUser(userId: string, fromUserId: string): Promise<number>;
   markRebatePaid(userId: string): Promise<User | undefined>;
+  updateUserCommissionBalance(id: string, commissionBalance: number): Promise<User | undefined>;
+  markMachineRebatePaid(machineId: string): Promise<UserMachine | undefined>;
 
   getActiveAnnouncements(): Promise<Announcement[]>;
   getAllAnnouncements(): Promise<Announcement[]>;
@@ -374,6 +376,24 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ rebatePaidToReferrer: true })
       .where(eq(users.id, userId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateUserCommissionBalance(id: string, commissionBalance: number): Promise<User | undefined> {
+    const [updated] = await db
+      .update(users)
+      .set({ commissionBalance: String(commissionBalance) })
+      .where(eq(users.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async markMachineRebatePaid(machineId: string): Promise<UserMachine | undefined> {
+    const [updated] = await db
+      .update(userMachines)
+      .set({ rebatePaid: true })
+      .where(eq(userMachines.id, machineId))
       .returning();
     return updated || undefined;
   }
