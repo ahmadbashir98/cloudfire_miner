@@ -15,6 +15,7 @@ import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import History from "@/pages/history";
 import { Loader2 } from "lucide-react";
+import { InstallPrompt } from "@/components/install-prompt";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
@@ -101,6 +102,7 @@ function App() {
         <AuthProvider>
           <Toaster />
           <Router />
+          <InstallPrompt />
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
