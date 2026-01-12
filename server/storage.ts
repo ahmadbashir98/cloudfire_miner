@@ -43,6 +43,7 @@ export interface IStorage {
   updateMachineLastClaimed(machineId: string, claimedAt: Date): Promise<UserMachine | undefined>;
 
   getActiveMiningSessions(userId: string): Promise<MiningSession[]>;
+  getCompletedMiningSessions(userId: string): Promise<MiningSession[]>;
   createMiningSession(userId: string, userMachineId: string, machineId: string, machineName: string, dailyProfit: number): Promise<MiningSession>;
   completeSession(sessionId: string, earnedAmount: number): Promise<MiningSession | undefined>;
   getSessionsDueForCompletion(): Promise<MiningSession[]>;
@@ -188,6 +189,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(miningSessions)
       .where(and(eq(miningSessions.userId, userId), eq(miningSessions.status, "active")))
+      .orderBy(desc(miningSessions.startTime));
+  }
+
+  async getCompletedMiningSessions(userId: string): Promise<MiningSession[]> {
+    return await db
+      .select()
+      .from(miningSessions)
+      .where(and(eq(miningSessions.userId, userId), eq(miningSessions.status, "completed")))
       .orderBy(desc(miningSessions.startTime));
   }
 

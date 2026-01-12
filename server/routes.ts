@@ -454,6 +454,73 @@ export async function registerRoutes(
     }
   });
 
+  // Miners: Get detailed miner data for My Miners page
+  app.get("/api/miners/details/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const userMachines = await storage.getUserMachines(userId);
+      const sessions = await storage.getActiveMiningSessions(userId);
+      const completedSessions = await storage.getCompletedMiningSessions(userId);
+      const now = new Date();
+
+      const minerDetails = userMachines.map((um) => {
+        const machine = MINING_MACHINES_DATA.find((m) => m.id === um.machineId);
+        if (!machine) return null;
+
+        const purchasedAt = new Date(um.purchasedAt);
+        const totalDays = machine.duration;
+        const expirationDate = new Date(purchasedAt.getTime() + totalDays * 24 * 60 * 60 * 1000);
+        const daysUsed = Math.min(
+          totalDays,
+          Math.floor((now.getTime() - purchasedAt.getTime()) / (24 * 60 * 60 * 1000))
+        );
+        const isExpired = now > expirationDate;
+
+        // Calculate earned income from completed sessions for this machine
+        const machineCompletedSessions = completedSessions.filter(
+          (s) => s.userMachineId === um.id
+        );
+        const earnedIncome = machineCompletedSessions.reduce(
+          (sum, s) => sum + parseFloat(String(s.earnedAmount || 0)),
+          0
+        );
+
+        // Check active session for status
+        const activeSession = sessions.find((s) => s.userMachineId === um.id);
+        let status = "Idle";
+        let remainingHours = 0;
+
+        if (isExpired) {
+          status = "Expired";
+        } else if (activeSession) {
+          const endTime = new Date(activeSession.endTime);
+          const remainingMs = Math.max(0, endTime.getTime() - now.getTime());
+          remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
+          status = `Running ${24 - remainingHours} Hours`;
+        }
+
+        return {
+          id: um.id,
+          machineId: um.machineId,
+          machineName: machine.name,
+          purchasedAt: purchasedAt.toISOString(),
+          expirationDate: expirationDate.toISOString(),
+          daysUsed,
+          totalDays,
+          earnedIncome,
+          dailyIncome: machine.dailyProfit,
+          status,
+          remainingHours,
+          isExpired,
+        };
+      }).filter(Boolean);
+
+      res.json(minerDetails);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+
   // Machines: Rent a machine
   app.post("/api/machines/rent", async (req, res) => {
     try {

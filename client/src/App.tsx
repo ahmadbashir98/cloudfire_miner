@@ -14,6 +14,7 @@ import Team from "@/pages/team";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import History from "@/pages/history";
+import MyMiners from "@/pages/my-miners";
 import { Loader2 } from "lucide-react";
 import { InstallPrompt } from "@/components/install-prompt";
 
@@ -86,6 +87,9 @@ function Router() {
       </Route>
       <Route path="/history">
         <ProtectedRoute component={History} />
+      </Route>
+      <Route path="/my-miners">
+        <ProtectedRoute component={MyMiners} />
       </Route>
       <Route path="/admin-portal">
         <ProtectedRoute component={Admin} />
