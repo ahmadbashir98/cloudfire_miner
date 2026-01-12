@@ -20,7 +20,7 @@ import {
   type InsertAnnouncement,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, ne } from "drizzle-orm";
+import { eq, and, desc, ne, lte } from "drizzle-orm";
 
 function generateReferralCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -42,9 +42,11 @@ export interface IStorage {
   addUserMachine(data: InsertUserMachine): Promise<UserMachine>;
   updateMachineLastClaimed(machineId: string, claimedAt: Date): Promise<UserMachine | undefined>;
 
-  getActiveMiningSession(userId: string): Promise<MiningSession | undefined>;
-  createMiningSession(userId: string, endsAt: Date): Promise<MiningSession>;
-  claimMiningSession(sessionId: string): Promise<MiningSession | undefined>;
+  getActiveMiningSessions(userId: string): Promise<MiningSession[]>;
+  createMiningSession(userId: string, userMachineId: string, machineId: string, machineName: string, dailyProfit: number): Promise<MiningSession>;
+  completeSession(sessionId: string, earnedAmount: number): Promise<MiningSession | undefined>;
+  getSessionsDueForCompletion(): Promise<MiningSession[]>;
+  getSessionByUserMachine(userMachineId: string): Promise<MiningSession | undefined>;
 
   getUserWithdrawals(userId: string): Promise<WithdrawalRequest[]>;
   getAllWithdrawals(): Promise<WithdrawalRequest[]>;
@@ -181,30 +183,60 @@ export class DatabaseStorage implements IStorage {
     return machine;
   }
 
-  async getActiveMiningSession(userId: string): Promise<MiningSession | undefined> {
-    const [session] = await db
+  async getActiveMiningSessions(userId: string): Promise<MiningSession[]> {
+    return await db
       .select()
       .from(miningSessions)
-      .where(and(eq(miningSessions.userId, userId), eq(miningSessions.claimed, false)))
-      .orderBy(desc(miningSessions.startedAt))
-      .limit(1);
-    return session || undefined;
+      .where(and(eq(miningSessions.userId, userId), eq(miningSessions.status, "active")))
+      .orderBy(desc(miningSessions.startTime));
   }
 
-  async createMiningSession(userId: string, endsAt: Date): Promise<MiningSession> {
+  async createMiningSession(userId: string, userMachineId: string, machineId: string, machineName: string, dailyProfit: number): Promise<MiningSession> {
+    const now = new Date();
+    const endTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const [session] = await db
       .insert(miningSessions)
-      .values({ userId, endsAt })
+      .values({ 
+        userId, 
+        userMachineId, 
+        machineId, 
+        machineName, 
+        dailyProfit: String(dailyProfit),
+        endTime 
+      })
       .returning();
     return session;
   }
 
-  async claimMiningSession(sessionId: string): Promise<MiningSession | undefined> {
+  async completeSession(sessionId: string, earnedAmount: number): Promise<MiningSession | undefined> {
     const [session] = await db
       .update(miningSessions)
-      .set({ claimed: true })
+      .set({ status: "completed", earnedAmount: String(earnedAmount) })
       .where(eq(miningSessions.id, sessionId))
       .returning();
+    return session || undefined;
+  }
+
+  async getSessionsDueForCompletion(): Promise<MiningSession[]> {
+    const now = new Date();
+    return await db
+      .select()
+      .from(miningSessions)
+      .where(and(
+        eq(miningSessions.status, "active"),
+        lte(miningSessions.endTime, now)
+      ));
+  }
+
+  async getSessionByUserMachine(userMachineId: string): Promise<MiningSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(miningSessions)
+      .where(and(
+        eq(miningSessions.userMachineId, userMachineId),
+        eq(miningSessions.status, "active")
+      ))
+      .limit(1);
     return session || undefined;
   }
 
