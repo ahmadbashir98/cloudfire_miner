@@ -54,7 +54,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { withdrawalFormSchema, depositFormSchema, EXCHANGE_RATES } from "@shared/schema";
 import type { z } from "zod";
 
-const PAYMENT_NUMBER = "03425809569";
+const PAYMENT_NUMBER = "03043556070";
 
 type WithdrawFormData = z.infer<typeof withdrawalFormSchema>;
 type DepositFormData = z.infer<typeof depositFormSchema>;
@@ -338,15 +338,16 @@ export default function Payments() {
         </Card>
 
         <div className="grid grid-cols-2 gap-4">
-          <Button
-            size="lg"
-            className="h-14 text-lg font-semibold bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-lg"
-            onClick={() => setDepositDialogOpen(true)}
-            data-testid="button-open-deposit"
-          >
-            <ArrowDownLeft className="w-5 h-5 mr-2" />
-            Deposit
-          </Button>
+          <Link href="/deposit">
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg font-semibold bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-lg"
+              data-testid="button-open-deposit"
+            >
+              <ArrowDownLeft className="w-5 h-5 mr-2" />
+              Deposit
+            </Button>
+          </Link>
           <Button
             size="lg"
             variant="outline"

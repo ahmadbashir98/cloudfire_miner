@@ -15,6 +15,7 @@ import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import History from "@/pages/history";
 import MyMiners from "@/pages/my-miners";
+import Deposit from "@/pages/deposit";
 import { Loader2 } from "lucide-react";
 import { InstallPrompt } from "@/components/install-prompt";
 
@@ -78,6 +79,9 @@ function Router() {
       </Route>
       <Route path="/payments">
         <ProtectedRoute component={Payments} />
+      </Route>
+      <Route path="/deposit">
+        <ProtectedRoute component={Deposit} />
       </Route>
       <Route path="/team">
         <ProtectedRoute component={Team} />
