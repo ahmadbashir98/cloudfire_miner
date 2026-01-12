@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { BottomNav } from "@/components/bottom-nav";
 import { useAuth } from "@/lib/auth";
+import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { withdrawalFormSchema, depositFormSchema, EXCHANGE_RATES } from "@shared/schema";
@@ -282,8 +283,8 @@ export default function Payments() {
   };
 
   const quickLinks = [
-    { icon: History, label: "Account history", onClick: () => setHistoryDialogOpen(true) },
-    { icon: FileText, label: "Withdrawal history", onClick: () => setWithdrawHistoryDialogOpen(true) },
+    { icon: History, label: "Account history", href: "/history" },
+    { icon: FileText, label: "Withdrawal history", href: "/history" },
     { icon: Gift, label: "My Coupons", onClick: () => toast({ title: "Coming Soon", description: "Coupons feature coming soon!" }) },
   ];
 
@@ -358,17 +359,31 @@ export default function Payments() {
 
         <div className="flex justify-around py-4">
           {quickLinks.map((link, index) => (
-            <button
-              key={index}
-              onClick={link.onClick}
-              className="flex flex-col items-center gap-2 group"
-              data-testid={`quicklink-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-            >
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/20 to-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <link.icon className="w-6 h-6 text-blue-400" />
-              </div>
-              <span className="text-xs text-muted-foreground text-center max-w-[80px]">{link.label}</span>
-            </button>
+            link.href ? (
+              <Link key={index} href={link.href}>
+                <div
+                  className="flex flex-col items-center gap-2 group cursor-pointer"
+                  data-testid={`quicklink-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/20 to-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <link.icon className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <span className="text-xs text-muted-foreground text-center max-w-[80px]">{link.label}</span>
+                </div>
+              </Link>
+            ) : (
+              <button
+                key={index}
+                onClick={link.onClick}
+                className="flex flex-col items-center gap-2 group"
+                data-testid={`quicklink-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500/20 to-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <link.icon className="w-6 h-6 text-blue-400" />
+                </div>
+                <span className="text-xs text-muted-foreground text-center max-w-[80px]">{link.label}</span>
+              </button>
+            )
           ))}
         </div>
 

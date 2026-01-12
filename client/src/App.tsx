@@ -13,6 +13,7 @@ import Payments from "@/pages/payments";
 import Team from "@/pages/team";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
+import History from "@/pages/history";
 import { Loader2 } from "lucide-react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -81,6 +82,9 @@ function Router() {
       </Route>
       <Route path="/profile">
         <ProtectedRoute component={Profile} />
+      </Route>
+      <Route path="/history">
+        <ProtectedRoute component={History} />
       </Route>
       <Route path="/admin-portal">
         <ProtectedRoute component={Admin} />

@@ -352,7 +352,22 @@ export async function registerRoutes(
         }
       }
 
+      // Save mining claim record for history
+      if (totalReward > 0) {
+        await storage.createMiningClaim(userId, totalReward, claimedCount);
+      }
+
       res.json({ reward: totalReward, claimed: true, machinesClaimed: claimedCount });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+
+  // Mining claims history
+  app.get("/api/mining/claims/:userId", async (req, res) => {
+    try {
+      const claims = await storage.getUserMiningClaims(req.params.userId);
+      res.json(claims);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Server error" });
     }

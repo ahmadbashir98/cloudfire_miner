@@ -5,6 +5,7 @@ import {
   withdrawalRequests,
   depositRequests,
   referralCommissions,
+  miningClaims,
   announcements,
   type User,
   type InsertUser,
@@ -14,6 +15,7 @@ import {
   type WithdrawalRequest,
   type DepositRequest,
   type ReferralCommission,
+  type MiningClaim,
   type Announcement,
   type InsertAnnouncement,
 } from "@shared/schema";
@@ -67,6 +69,9 @@ export interface IStorage {
   createAnnouncement(data: InsertAnnouncement, createdBy: string): Promise<Announcement>;
   updateAnnouncement(id: string, data: Partial<InsertAnnouncement>): Promise<Announcement | undefined>;
   deleteAnnouncement(id: string): Promise<boolean>;
+
+  createMiningClaim(userId: string, amount: number, machinesClaimed: number): Promise<MiningClaim>;
+  getUserMiningClaims(userId: string): Promise<MiningClaim[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -370,6 +375,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(announcements.id, id))
       .returning();
     return result.length > 0;
+  }
+
+  async createMiningClaim(userId: string, amount: number, machinesClaimed: number): Promise<MiningClaim> {
+    const [claim] = await db
+      .insert(miningClaims)
+      .values({ userId, amount: String(amount), machinesClaimed })
+      .returning();
+    return claim;
+  }
+
+  async getUserMiningClaims(userId: string): Promise<MiningClaim[]> {
+    return await db
+      .select()
+      .from(miningClaims)
+      .where(eq(miningClaims.userId, userId))
+      .orderBy(desc(miningClaims.createdAt));
   }
 }
 

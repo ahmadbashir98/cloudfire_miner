@@ -167,6 +167,16 @@ export const referralCommissions = pgTable("referral_commissions", {
 
 export type ReferralCommission = typeof referralCommissions.$inferSelect;
 
+export const miningClaims = pgTable("mining_claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  machinesClaimed: integer("machines_claimed").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type MiningClaim = typeof miningClaims.$inferSelect;
+
 export const announcements = pgTable("announcements", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
