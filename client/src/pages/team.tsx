@@ -262,6 +262,72 @@ export default function Team() {
                 )}
               </TabsContent>
             </Tabs>
+
+            {/* Weekly Bonus Table */}
+            <div className="mt-6" data-testid="section-weekly-bonus">
+              <h3 className="text-lg font-bold text-gray-900 mb-3">Weekly Bonus Table</h3>
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="px-3 py-3 text-left font-semibold text-gray-700">Job Title</th>
+                      <th className="px-3 py-3 text-center font-semibold text-gray-700">Investors</th>
+                      <th className="px-3 py-3 text-right font-semibold text-gray-700">Bonus</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    <tr className="bg-white">
+                      <td className="px-3 py-3 text-gray-900">New Partner</td>
+                      <td className="px-3 py-3 text-center text-gray-600">0 - 29</td>
+                      <td className="px-3 py-3 text-right text-gray-500">$0</td>
+                    </tr>
+                    <tr className="bg-white">
+                      <td className="px-3 py-3 text-gray-900">Junior Partner</td>
+                      <td className="px-3 py-3 text-center text-gray-600">30 - 49</td>
+                      <td className="px-3 py-3 text-right text-green-600 font-medium">$2 per week</td>
+                    </tr>
+                    <tr className="bg-white">
+                      <td className="px-3 py-3 text-gray-900">Intermediate Partner</td>
+                      <td className="px-3 py-3 text-center text-gray-600">50 - 99</td>
+                      <td className="px-3 py-3 text-right text-green-600 font-medium">$5 per week</td>
+                    </tr>
+                    <tr className="bg-blue-50 border-l-4 border-l-blue-400">
+                      <td className="px-3 py-3 text-blue-900 font-semibold">Senior Partner</td>
+                      <td className="px-3 py-3 text-center text-blue-700 font-medium">100 - 199</td>
+                      <td className="px-3 py-3 text-right text-blue-700 font-bold">$10 per week</td>
+                    </tr>
+                    <tr className="bg-white">
+                      <td className="px-3 py-3 text-gray-900">Regional Partner</td>
+                      <td className="px-3 py-3 text-center text-gray-600">200 - 499</td>
+                      <td className="px-3 py-3 text-right text-green-600 font-medium">$15 per week</td>
+                    </tr>
+                    <tr className="bg-white">
+                      <td className="px-3 py-3 text-gray-900">City Partner</td>
+                      <td className="px-3 py-3 text-center text-gray-600">500 - 1299</td>
+                      <td className="px-3 py-3 text-right text-green-600 font-medium">$30 per week</td>
+                    </tr>
+                    <tr className="bg-white">
+                      <td className="px-3 py-3 text-gray-900">Executive Partner</td>
+                      <td className="px-3 py-3 text-center text-gray-600">1300 - 2499</td>
+                      <td className="px-3 py-3 text-right text-green-600 font-medium">$100 per week</td>
+                    </tr>
+                    <tr className="bg-white">
+                      <td className="px-3 py-3 text-gray-900">Corporate Partner</td>
+                      <td className="px-3 py-3 text-center text-gray-600">2500 - 4999</td>
+                      <td className="px-3 py-3 text-right text-amber-600 font-bold">$1K per month</td>
+                    </tr>
+                    <tr className="bg-white">
+                      <td className="px-3 py-3 text-gray-900">Consultant</td>
+                      <td className="px-3 py-3 text-center text-gray-600">≥ 5000</td>
+                      <td className="px-3 py-3 text-right text-amber-600 font-bold">$15K per month</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-3 text-xs text-gray-500 text-center">
+                Please contact customer service to get your weekly bonus.
+              </p>
+            </div>
           </div>
         </div>
       </main>
