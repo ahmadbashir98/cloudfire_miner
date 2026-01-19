@@ -2,10 +2,10 @@
   "version": 2,
   "installCommand": "npm install",
   "buildCommand": "npm run build",
-  "functions": {
-    "dist/index.cjs": {
-      "memory": 1024,
-      "maxDuration": 10
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
     }
-  }
+  ]
 }
