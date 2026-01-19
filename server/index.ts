@@ -96,3 +96,6 @@ app.use((req, res, next) => {
     },
   );
 })();
+
+// Export the Express app for serverless environments like Vercel
+export default app;
