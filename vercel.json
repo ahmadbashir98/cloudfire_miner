@@ -1,34 +1,11 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "dist/index.cjs",
-      "use": "@vercel/node"
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "functions": {
+    "dist/index.cjs": {
+      "memory": 1024,
+      "maxDuration": 10
     }
-  ],
-  "routes": [
-    {
-      "src": "/assets/(.*)",
-      "dest": "/dist/public/assets/$1"
-    },
-    {
-      "src": "/icons/(.*)",
-      "dest": "/dist/public/icons/$1"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/dist/public/manifest.json"
-    },
-    {
-      "src": "/service-worker.js",
-      "dest": "/dist/public/service-worker.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/index.cjs"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
   }
 }
