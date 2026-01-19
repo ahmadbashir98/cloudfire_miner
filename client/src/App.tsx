@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { injectSpeedInsights } from "@vercel/speed-insights";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
@@ -105,9 +105,6 @@ function Router() {
 }
 
 function App() {
-  // Initialize Vercel Speed Insights
-  injectSpeedInsights();
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -115,6 +112,7 @@ function App() {
           <Toaster />
           <Router />
           <InstallPrompt />
+          <SpeedInsights />
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
